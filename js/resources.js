@@ -71,7 +71,7 @@
   }
 
   /* This is used by developers to grab references to images they know
-   * have been previously loaded. If an image is cached, this functions
+   * have been previously loaded. If an image is cached, this function is 
    * the same as calling load() on that URL.
    */
   function get(url) {

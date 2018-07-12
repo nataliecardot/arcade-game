@@ -119,7 +119,7 @@ let Engine = (function(global) {
     row, col;
 
     // Before drawing, clear existing canvas
-    ctx.clearRect(0,0,canvas.width,canvas.height)
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     /* Loop through the number of rows and columns we've defined above
      * and, using the rowImages array, draw the correct image for that
@@ -127,14 +127,14 @@ let Engine = (function(global) {
      */
     for (row = 0; row < numRows; row++) {
       for (col = 0; col < numCols; col++) {
-          /* The drawImage function of the canvas' context element
-           * requires 3 parameters: the image to draw, the x coordinate
-           * to start drawing and the y coordinate to start drawing.
-           * We're using our Resources helpers to refer to our images
-           * so that we get the benefits of caching these images, since
-           * we're using them over and over.
-           */
-          ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
+        /* The drawImage function of the canvas' context element
+         * requires 3 parameters: the image to draw, the x coordinate
+         * to start drawing and the y coordinate to start drawing.
+         * We're using our Resources helpers to refer to our images
+         * so that we get the benefits of caching these images, since
+         * we're using them over and over.
+         */
+        ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
       }
     }
 
