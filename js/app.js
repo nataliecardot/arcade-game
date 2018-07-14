@@ -158,6 +158,18 @@ const closeIcon = document.querySelector('.close');
 function showModal() {
   modal.classList.add('modal-visible');
 
+  // Goal: Disable arrow keys while the modal is open (doesn't work). If I can get this to work, then I'd re-add the arrow key event listener when the game is reset
+  document.removeEventListener('keydown', function(e) {
+    let allowedKeys = {
+      37: 'left',
+      38: 'up',
+      39: 'right',
+      40: 'down'
+    };
+    // Not sure why "player" needs to be lowercase, given the class name is uppercase
+    player.handleInput(allowedKeys[e.keyCode]);
+  });
+
   // Calls playAgain() function when user clicks play again button in modal
   playAgainButton.addEventListener('click', playAgain);
 
