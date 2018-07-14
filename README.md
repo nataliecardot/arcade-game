@@ -8,13 +8,13 @@ This simple game is similar to Frogger: the goal is to get to the other side of 
 
 Click the link below to play in your browser.
 
-[Udacity Arcade Game]( INSERT )
+[Bug Dash](https://nataliecardot.com/arcade-game/index.html)
 
 Alternatively, clone the repository and open the index.html file in your browser.
 
 ### How to Play
 
-Using the arrow keys on your keyboard, try to move the sprite to the water, avoiding the bugs. 
+Using the arrow keys on your keyboard, try to move the sprite to the water, avoiding the bugs.
 
 
 
