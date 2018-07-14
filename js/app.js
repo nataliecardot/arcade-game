@@ -7,9 +7,6 @@
 const playAgainButton = document.querySelector('.play-again');
 const restartButton = document.querySelector('.restart');
 
-// Calls playAgain() function when user clicks play again button in modal
-playAgainButton.addEventListener('click', playAgain);
-
 // Calls playAgain() function when user clicks reset icon in sidebar
 restartButton.addEventListener('click', playAgain);
 
@@ -128,7 +125,6 @@ class Enemy {
       if (lives === 0) {
         // Calls function that adds class that sets modal to display: block
         showModal();
-        document.removeEventListener('keydown');
       }
     }
   }
@@ -161,21 +157,35 @@ const closeIcon = document.querySelector('.close');
 // When called, adds class that sets modal to display: block when player reaches water
 function showModal() {
   modal.classList.add('modal-visible');
+
+  // Calls playAgain() function when user clicks play again button in modal
+  playAgainButton.addEventListener('click', playAgain);
+
+  // If esc is pressed, closes modal and restarts game (note: keydown used instead of keypress because keypress only works for keys that produce a character value)
+  document.addEventListener('keydown', function(e) {
+    let keyCode = e.keyCode;
+    if (keyCode === 27) {
+      modal.classList.remove('modal-visible');
+      playAgain()
+    }
+  });
+
+  // If enter is pressed, closes modal and restarts game
+  document.addEventListener('keydown', function(e) {
+    let keyCode = e.keyCode;
+    if (keyCode === 13) {
+      modal.classList.remove('modal-visible');
+      playAgain()
+    }
+  });
+
+  // If user clicks modal's close icon, closes modal and restarts game
+  closeIcon.addEventListener('click', function() {
+    modal.classList.remove('modal-visible');
+    playAgain();
+  });
 }
 
-// Closes modal (adding class that sets it back to display: none) upon user's clicking its close icon
-closeIcon.addEventListener('click', function() {
-  modal.classList.remove('modal-visible');
-});
-
-// Closes modal and restarts game when key is pressed down (note: keydown used instead of keypress because keypress only works for keys that produce a character value)
-document.addEventListener('keydown', function(e) {
-  let keyCode = e.keyCode;
-  if (keyCode === 27) {
-    modal.classList.remove('modal-visible');
-    playAgain()
-  }
-});
 
 // Listens for keydown event (fired when a key is pressed down [regardless of whether it produces a character, unlike keypress]) and sends the keys to Player.handleInput() method
 document.addEventListener('keydown', function(e) {
