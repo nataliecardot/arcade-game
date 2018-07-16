@@ -1,195 +1,221 @@
-'use strict'; // Enables strict mode to catch common bloopers
+let card = document.getElementsByClassName('card');
+// Spread operator (new in ES6) allows iterable to expand where 0+ arguments are expected
+let cards = [...card];
+console.log(cards);
 
-const playAgainButton = document.querySelector('.play-again');
+// getElementsByClassName method returns HTMLCollection (or a NodeList for some older browsers https://www.w3schools.com/js/js_htmldom_nodelist.asp), an array-like object on which you can use Array.prototype methods. Added [0] to get the first element matched
+let deck = document.getElementsByClassName('card-deck')[0];
+let moves = 0;
+// Class moves controls what's displayed in the score panel
+let counter = document.querySelector('.moves');
+// Const cannot be used here in order for star rating to be reset when startGame() is called
+let stars = document.querySelectorAll('.fa-star');
+let matchingCard = document.getElementsByClassName('matching');
+let closeIcon = document.querySelector('.close');
+// Using getElementsByClassName instead of querySelector here (there's only one class to select) because querySelector is non-live, i.e., it doesn't reflect DOM manipulation. When the user wins the game, a class ("show") is added to the element with class modal, which is set to visible in CSS, so getElementsByClassName is needed (otherwise the modal remains hidden when the game has been won)
+let modal = document.getElementsByClassName('modal')[0];
+let openedCards = [];
+let second = 0, minute = 0, hour = 0;
+let timer = document.querySelector('.timer');
+let interval;
 const restartButton = document.querySelector('.restart');
+const modalPlayAgainButton = document.querySelector('.play-again');
 
-// Calls playAgain() function when user clicks reset icon in sidebar
-restartButton.addEventListener('click', playAgain);
+// Shuffle function from http://stackoverflow.com/a/2450976
+function shuffle(array) {
+  let currentIndex = array.length, temporaryValue, randomIndex;
 
-// Starts lives at 3
-let lives = 3;
+  while (currentIndex !== 0) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
 
-// Used to disable arrow keys while modal opened
-let isDead = false;
+  return array;
+  }
 
-let sidebarLives = document.querySelector('.lives-left');
-sidebarLives.innerHTML = lives;
+// Shuffles cards upon page load
+document.body.onload = startGame();
 
-// Sets an initial player score of 0
-let score = 0;
+// Calls startGame() function with user clicks restart icon
+restartButton.addEventListener('click', startGame);
 
-// Sets score shown in sidebar
-let sidebarScore = document.querySelector('.score');
-sidebarScore.innerHTML = score;
+// Calls reset() function (hides modal and restarts game) with user clicks "play again" button in modal
+modalPlayAgainButton.addEventListener('click', reset);
 
-let modalScore = document.querySelector('.modal-score');
-modalScore.innerHTML = score;
-
-// Called when user clicks restart button in sidebar or play again button in modal. Sets modal to display: none, resets lives and score
-function playAgain() {
-  isDead = false;
-  // Hides modal if present (if opened by game ending)
-  modal.classList.remove('modal-visible');
-  lives = 3;
-  sidebarLives.innerHTML = lives;
-  score = 0;
-  sidebarScore.innerHTML = score;
+function startGame() {
+  // Shuffles deck
+  cards = shuffle(cards);
+  // Loops through shuffled cards, adds each to the deck (an array-like object, since it is defined with getElementsByClassName), and removes any existing classes from each card
+  for (let i = 0; i < cards.length; i++) {
+  cards.forEach(i => deck.appendChild(i));
+    // Class 'open' changes the card color and triggers an animation, while 'show' (when applied to a card; in other cases it is applied to the modal) displays the Font Awesome icon
+    cards[i].classList.remove('show', 'open', 'matching', 'disabled');
+  }
+  openedCards = [];
+  // Resets number of moves
+  moves = 0;
+  counter.innerHTML = moves;
+  // Resets star rating
+  for (let i = 0; i < stars.length; i++) {
+    stars[i].style.color = '#ffd700';
+    // When function moveCounter() is called, stars is set to display: none after a certain number of moves. (visibility: collapse was original method used to hide stars, but this prevented proper centering of stars in modal)
+    stars[i].style.display = 'inline';
+  }
+  // Resets timer
+  let second = 0;
+  let minute = 0;
+  let hour = 0;
+  let timer = document.querySelector('.timer');
+  timer.innerHTML = '0 mins 0 secs';
+  // Window method that stops setInterval() Window method from executing "myTimer" function every 1 second
+  clearInterval(interval);
 }
 
-// Note: In a constructor function "this" does not have a value. It is a substitute for the new object. The value of this will become the new object when a new object is created
+// When called, function toggles open and show classes to display cards. Class 'open' changes the card color and triggers an animation, while 'show' (when applied to a card; in other cases it is applied to the modal) displays the Font Awesome icon
+let displayCard = function() {
+  this.classList.toggle('open');
+  this.classList.toggle('show');
+  this.classList.toggle('disabled');
+};
 
-// Note commas not used to separate methods and properties in a class
-class Player {
-  // Constructor function, a special function just for initializing new objects, will automatically run when a new object is constructed (with keyword "new") from this class. Contains data needed to create it
-  constructor(x, y, speed) {
-    this.sprite = 'images/char-boy.png';
-    this.x = x;
-    this.y = y;
-    this.speed = speed;
-  }
-
-  // Methods that all objects created from class will inherit. Would exist on prototype in pre-class way of writing it, but effect is the same (the following methods still exist on Player prototype [for example would be Player.prototype.update = function(dt)...])
-
-  // When player reaches water, moves player back to starting position, and increase score by 1
-  update(dt) {
-    if (this.y === 25) {
-      this.x = 200;
-      this.y = 400;
-      score++;
-      sidebarScore.innerHTML = score;
-  	}
-  }
-
-  // Draws player on screen
-  render() {
-    ctx.drawImage(Resources.get(this.sprite), this.x, this.y)
-  }
-
-  // If isDead is false (so it doesn't work when the modal is opened), connects keyboard input to player movement. If statements prevent player movement off screen
-  handleInput(allowedKeys) {
-    if (isDead) {
-      return;
+// Adds flipped cards to openedCards array, calls the counter function if two have been flipped, and checks if cards are a match or not
+function cardOpen() {
+  openedCards.push(this);
+  let len = openedCards.length;
+  // Once a card has been opened, starts timer if no moves have been made already (moves is set to one only after two cards have been flipped)
+  if (len == 1 && moves == 0) {
+    second = 0;
+    minute = 0;
+    hour = 0;
+    startTimer();
+  } else if (len === 2) {
+    moveCounter();
+    if (openedCards[0].type === openedCards[1].type) {
+      matching();
+    } else {
+      notMatching();
     }
-
-    if (allowedKeys === 'down' && this.y < 425) {
-      this.y += 25;
-    }
-
-		if (allowedKeys === 'up') {
-			this.y -= 25;
-		}
-
-		if (allowedKeys === 'left' && this.x > 0) {
-			this.x -= 25;
-		}
-
-		if (allowedKeys === 'right' && this.x < 400) {
-			this.x += 25;
-		}
   }
 }
 
-class Enemy {
-// Sets enemy's initial location
-  constructor(x, y, speed) {
-    this.x = x;
-    this.y = y;
-    // Sets speed of enemy
-    this.speed = speed;
-    // The image/sprite for our enemies
-    this.sprite = 'images/enemy-bug.png';
-  }
+// When cards match, adds/removes relevant classes and clears the two cards' arrays
+function matching() {
+  openedCards[0].classList.add('matching', 'disabled');
+  openedCards[1].classList.add('matching', 'disabled');
+  openedCards[0].classList.remove('show', 'open');
+  openedCards[1].classList.remove('show', 'open');
+  openedCards = [];
+}
 
-  update(dt) {
-    // Multiplies enemy's movement by time delta to ensure game runs at same speed for all computers
-    this.x += this.speed * dt;
-    // Once enemy finished moving across screen, moves it back so it can cross screen again and randomizes its speed
-    if (this.x > 500) {
-      this.x = -75;
-      // Math.random() function returns random number between 0 (inclusive) and 1 (exclusive). Math.floor() returns the largest integer less than or equal to a given number
-      this.speed = 70 + Math.floor(Math.random() * 450);
+// When cards don't match, adds class "not-matching" to both and calls disable() function (to disable flipping of other cards). After half a second, removes "not-matching" class, calls enable() function (to make flipping cards possible again), and clears the two cards' arrays
+function notMatching() {
+  openedCards[0].classList.add('not-matching');
+  openedCards[1].classList.add('not-matching');
+  disable();
+  setTimeout(function() {
+    openedCards[0].classList.remove('show', 'open', 'not-matching');
+    openedCards[1].classList.remove('show', 'open', 'not-matching');
+    enable();
+    openedCards = [];
+  }, 500);
+}
+
+// Disables all cards temporarily (while two cards are flipped)
+function disable() {
+  cards.forEach(card => card.classList.add('disabled'));
+}
+
+// Enables flipping of cards, disables matching cards
+function enable() {
+  Array.prototype.filter.call(cards, function(card) {
+    card.classList.remove('disabled');
+    for (let i = 0; i < matchingCard.length; i++) {
+      matchingCard[i].classList.add('disabled');
     }
+  });
+}
 
-    // When collission occurs, subtracts a life, updates lives displayed in sidebar and updates score that will be displayed in modal if no lives remaining
-    if ((player.x < (this.x + 70)) && ((player.x + 17) > this.x) && (player.y < (this.y + 45)) && ((30 + player.y) > this.y)) {
-  		player.x = 200;
-  		player.y = 400;
-      lives--;
-      sidebarLives.innerHTML = lives;
-      modalScore.innerHTML = score;
-      if (lives === 0) {
-        isDead = true;
-        // Calls function that adds class that sets modal to display: block
-        showModal();
+// Updates move counter
+function moveCounter() {
+  // Increases "moves" by one
+  moves++;
+  counter.innerHTML = moves;
+  // Sets star rating based on number of moves. (Note: using display: none for removed stars instead of visibility: collapse, because with visibility: collapse, row is centered as if stars are still present)
+  if (moves > 8 && moves < 12) {
+    for (i = 0; i < 3; i++) {
+      if (i > 1) {
+        stars[i].style.display = 'none';
       }
     }
   }
-
-  // Draws enemy on screen
-  render() {
-    ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+  else if (moves > 13) {
+    for (i = 0; i < 3; i++) {
+      if (i > 0) {
+        stars[i].style.display = 'none';
+      }
+    }
   }
-};
+}
 
-// ENEMY/PLAYER OBJECT INSTANTIATION
-
-let enemyPosition = [60, 140, 220];
-
-let allEnemies = [];
-
-let player = new Player(200, 400, 50);
-
-enemyPosition.forEach(function(posY) {
-  let enemy = new Enemy(0, posY, 70 + Math.floor(Math.random() * 450));
-  allEnemies.push(enemy);
-});
-
-// MODAL
-
-const modal = document.getElementById('myModal');
-const closeIcon = document.querySelector('.close');
-
-// When called, adds class that sets modal to display: block when player reaches water
-function showModal() {
-  modal.classList.add('modal-visible');
-
-  // Calls playAgain() function when user clicks play again button in modal
-  playAgainButton.addEventListener('click', playAgain);
-
-  // If esc is pressed, closes modal and restarts game (note: keydown used instead of keypress because keypress only works for keys that produce a character value)
-  document.addEventListener('keydown', function(e) {
-    let keyCode = e.keyCode;
-    if (keyCode === 27) {
-      modal.classList.remove('modal-visible');
-      playAgain();
+// Game timer
+function startTimer() {
+  interval = setInterval(function() {
+    timer.innerHTML = minute + ' mins ' + second + ' secs';
+    second++;
+    if (second == 60) {
+      minute++;
+      second = 0;
     }
-  });
-
-  // If enter is pressed, closes modal and restarts game
-  document.addEventListener('keydown', function(e) {
-    let keyCode = e.keyCode;
-    if (keyCode === 13) {
-      modal.classList.remove('modal-visible');
-      playAgain()
+    if (minute == 60) {
+      hour++;
+      minute = 0;
     }
-  });
+  }, 1000);
+}
 
-  // If user clicks modal's close icon, closes modal and restarts game
-  closeIcon.addEventListener('click', function() {
-    modal.classList.remove('modal-visible');
-    playAgain();
+// Congratulates player when all cards match and shows modal, moves, time and rating
+function congratulations() {
+  if (matchingCard.length == 16) {
+    // Window method that stops setInterval() Window method from executing "myTimer" function every 1 second
+    clearInterval(interval);
+    let finalTime = timer.innerHTML;
+
+    // Shows congratulations modal
+    modal.classList.add('show');
+
+    let starRating = document.querySelector('.stars').innerHTML;
+
+    // Shows number of moves made, time, and rating on modal
+    document.getElementsByClassName('final-moves')[0].innerHTML = moves;
+    document.getElementsByClassName('star-rating')[0].innerHTML = starRating;
+    document.getElementsByClassName('total-time')[0].innerHTML = finalTime;
+
+    // Adds event listener for modal's close button
+    closeModal();
+  }
+}
+
+// Closes modal upon clicking its close icon
+function closeModal() {
+  closeIcon.addEventListener('click', function(e) {
+    modal.classList.remove('show');
+    startGame();
   });
 }
 
-// Listens for keydown event (fired when a key is pressed down [regardless of whether it produces a character, unlike keypress]) and sends the keys to Player.handleInput() method
-document.addEventListener('keydown', function(e) {
-  let allowedKeys = {
-    37: 'left',
-    38: 'up',
-    39: 'right',
-    40: 'down'
-  };
+// Called when user hits "play again" button
+function reset() {
+  modal.classList.remove('show');
+  startGame();
+}
 
-  // "player" needs to be lowercase because an instance of the class is needed
-  player.handleInput(allowedKeys[e.keyCode]);
-});
+// Adds event listeners to each card
+for (let i = 0; i < cards.length; i++) {
+  card = cards[i];
+  card.addEventListener('click', displayCard);
+  card.addEventListener('click', cardOpen);
+  card.addEventListener('click', congratulations);
+}
