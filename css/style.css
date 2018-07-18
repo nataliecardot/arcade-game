@@ -1,4 +1,5 @@
 * {
+  /* Includes padding, border in element's total width/height */
   box-sizing: border-box;
 }
 
@@ -105,6 +106,7 @@ body {
 .restart {
 	cursor: pointer;
   color: #2eb82e;
+  margin-bottom: 1em;
 }
 
 /* Affects button inside modal that resets game on click */
@@ -125,4 +127,32 @@ body {
 
 button:hover {
   background-color: #2f4dbd;
+}
+
+/* Character selection section */
+.character p {
+  margin-bottom: 0;
+}
+
+.char-selector {
+  /* Changes images in ul to be displayed in a row since default for display: flex is flex-direction: row */
+  display: flex;
+  /* Used to center along whatever flex-direction is set to (the main axis). This is the X axis since display: flex is row, but would be Y axis if flex-direction were set to column */
+  justify-content: center;
+  margin: 0;
+  /* Browser default for ul is padding-left: 40px */
+  padding-left: 0;
+}
+
+.char-selector li {
+  list-style: none;
+}
+
+.char-selector img:hover {
+  transform: scale(1.5);
+  cursor: pointer;
+}
+
+.char-selector img {
+  width: 50px;
 }
